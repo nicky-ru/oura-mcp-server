@@ -1,9 +1,10 @@
 // Helper function to check if a string is a GUID/UUID
 function isGuid(str: string): boolean {
   if (!str) return false;
-  
+
   // GUID/UUID pattern: 8-4-4-4-12 hexadecimal digits
-  const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const guidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return guidPattern.test(str);
 }
 
@@ -12,14 +13,13 @@ import {
   ListToolsRequestSchema,
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { prompts } from "./prompts";
-import { ouraFetchTool } from "./tools";
-import { OuraService } from "./OuraService";
-import type { EnhancedTag, TagApiResponse } from "./interfaces";
-
+} from '@modelcontextprotocol/sdk/types.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { prompts } from './prompts';
+import { ouraFetchTool } from './tools';
+import { OuraService } from './OuraService';
+import type { EnhancedTag, TagApiResponse } from './interfaces';
 
 // Create MCP Server
 async function main() {
@@ -27,7 +27,7 @@ async function main() {
   const ouraToken = process.env.OURA_TOKEN;
 
   if (!ouraToken) {
-    console.error("OURA_TOKEN environment variable must be set");
+    console.error('OURA_TOKEN environment variable must be set');
     process.exit(1);
   }
 
@@ -36,8 +36,8 @@ async function main() {
 
   // Create and configure the server
   const server = new Server({
-    name: "oura-mcp-server",
-    version: "1.0.0",
+    name: 'oura-mcp-server',
+    version: '1.0.0',
     capabilities: {
       tools: {
         ouraFetchTool,
@@ -85,7 +85,7 @@ async function main() {
 
     try {
       // Handle Oura fetch operations
-      if (name === "oura-fetch") {
+      if (name === 'oura-fetch') {
         const endpoint = parameters.endpoint as string;
         const startDate = parameters.startDate as string;
         const endDate = parameters.endDate as string;
@@ -96,19 +96,19 @@ async function main() {
 
         let result: any;
         switch (endpoint) {
-          case "activity":
+          case 'activity':
             result = await ouraService.getDailyActivity(startDate, endDate);
             break;
-          case "readiness":
+          case 'readiness':
             result = await ouraService.getDailyReadiness(startDate, endDate);
             break;
-          case "sleep":
+          case 'sleep':
             result = await ouraService.getDailySleep(startDate, endDate);
             break;
-          case "stress":
+          case 'stress':
             result = await ouraService.getDailyStress(startDate, endDate);
             break;
-          case "heartrate":
+          case 'heartrate':
             result = await ouraService.getHeartRate(startDateTime, endDateTime);
             // If sleepPeriod is true, also fetch sleep data and include that
             if (sleepPeriod && startDate && endDate) {
@@ -116,48 +116,56 @@ async function main() {
               result = {
                 heartRate: result,
                 sleepData: sleepData,
-                note: "Heart rate data and sleep data are both provided so you can analyze heart rate during sleep periods.",
+                note: 'Heart rate data and sleep data are both provided so you can analyze heart rate during sleep periods.',
               };
             }
             break;
-          case "sleep_sessions":
+          case 'sleep_sessions':
             result = await ouraService.getSleep(startDate, endDate);
             break;
-          case "tags":
+          case 'tags':
             // Fetch tags
             const tagsResult = await ouraService.getTags(startDate, endDate);
-            
+
             // Convert to our extended interface
             result = {
-              ...tagsResult
+              ...tagsResult,
             } as TagApiResponse;
-            
+
             // Filter out custom tags (GUID) with empty comments
             if (result.data) {
-                result.data = result.data.filter((tag: EnhancedTag) => {
+              result.data = result.data.filter((tag: EnhancedTag) => {
                 // Keep the tag if:
                 // 1. It's a standard tag (tag_type_code is not a GUID), or
                 // 2. It's a custom tag (tag_type_code is a GUID) but has a non-empty comment
-                return !isGuid(tag.tag_type_code) || 
-                     (isGuid(tag.tag_type_code) && tag.comment && tag.comment.trim() !== '');
-                });
-              
+                return (
+                  !isGuid(tag.tag_type_code) ||
+                  (isGuid(tag.tag_type_code) &&
+                    tag.comment &&
+                    tag.comment.trim() !== '')
+                );
+              });
+
               // Add metadata to help Claude understand the tag structure
               result.tagMetadata = {
-                standardTags: result.data.filter((tag:EnhancedTag) => !isGuid(tag.tag_type_code)).length,
-                customTags: result.data.filter((tag:EnhancedTag) => isGuid(tag.tag_type_code)).length,
-                note: "Custom tags (with GUID tag_type_code) represent user-defined entries, often containing meal information. Standard tags have descriptive tag_type_code values like 'tag_generic_supplements'."
+                standardTags: result.data.filter(
+                  (tag: EnhancedTag) => !isGuid(tag.tag_type_code),
+                ).length,
+                customTags: result.data.filter((tag: EnhancedTag) =>
+                  isGuid(tag.tag_type_code),
+                ).length,
+                note: "Custom tags (with GUID tag_type_code) represent user-defined entries, often containing meal information. Standard tags have descriptive tag_type_code values like 'tag_generic_supplements'.",
               };
             }
-            
+
             // Filter by tag name if provided
             if (tagName && result.data) {
               result.data = result.data.filter(
-                (tag:EnhancedTag) =>
+                (tag: EnhancedTag) =>
                   tag.custom_name
                     ?.toLowerCase()
                     .includes(tagName.toLowerCase()) ||
-                  tag.comment?.toLowerCase().includes(tagName.toLowerCase())
+                  tag.comment?.toLowerCase().includes(tagName.toLowerCase()),
               );
             }
             break;
@@ -169,7 +177,7 @@ async function main() {
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: JSON.stringify(result),
             },
           ],
@@ -181,12 +189,12 @@ async function main() {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.error("Error executing tool:", errorMessage);
+      console.error('Error executing tool:', errorMessage);
 
       return {
         content: [
           {
-            type: "text",
+            type: 'text',
             text: JSON.stringify({ error: errorMessage }),
           },
         ],
@@ -202,6 +210,6 @@ async function main() {
 
 // Run the server
 main().catch((error) => {
-  console.error("Failed to start server:", error);
+  console.error('Failed to start server:', error);
   process.exit(1);
 });
