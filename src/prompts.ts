@@ -17,7 +17,7 @@ const getSleepPrompt: OuraPrompt = {
   name: 'get-sleep',
   title: 'Get sleep data',
   description: 'Retrieve sleep metrics from your Oura ring',
-  text: "Show me my sleep data for the [TIME_PERIOD]. To do this, you'll need to:\n1. Use the oura-fetch tool to get daily sleep data\n2. Analyze the data to show sleep duration, efficiency, and other metrics\n3. IMPORTANT: When calculating sleep stage percentages (deep, REM, light), always use the total_sleep_duration as the denominator, NOT time_in_bed. This ensures calculations match what the Oura app shows.\n4. If visualizing sleep stages, show percentages of actual sleep time, not time in bed.\n5. Consider fetching tags data for the same period to look for correlations with activities, meals, or other factors that might affect sleep",
+  text: "Show me my sleep data for the [TIME_PERIOD]. To do this, you'll need to:\n1. Use the oura-fetch tool to get daily sleep data\n2. Analyze the data to show sleep duration, efficiency, and other metrics\n3. IMPORTANT: When calculating sleep stage percentages (deep, REM, light), always use the total_sleep_duration as the denominator, NOT time_in_bed. This ensures calculations match what the Oura app shows.\n4. Consider fetching tags data for the same period to look for correlations with activities, meals, or other factors that might affect sleep",
 };
 
 const getActivityPrompt: OuraPrompt = {
@@ -59,14 +59,14 @@ const analyzeHealthFactorsPrompt: OuraPrompt = {
   name: 'analyze-health-factors',
   title: 'Analyze health factors',
   description: 'Analyze how different factors affect your health metrics',
-  text: "Analyze how different factors affect my [METRIC_TYPE] for the [TIME_PERIOD]. To do this, you'll need to:\n1. Use the oura-fetch tool to get [METRIC_TYPE] data\n2. Use the oura-fetch tool to get tags data for the same period\n3. When processing duration data, always verify the units (the API provides durations in seconds) and convert appropriately to hours/minutes for visualization\n4. For sleep data, always calculate stage percentages based on total_sleep_duration, not time_in_bed\n5. Analyze the data to identify patterns and correlations\n6. Create a visualization showing how different factors (such as meals, activities, etc.) in my tags relate to my [METRIC_TYPE]",
+  text: "Analyze how different factors affect my [METRIC_TYPE] for the [TIME_PERIOD]. To do this, you'll need to:\n1. Use the oura-fetch tool to get [METRIC_TYPE] data\n2. Use the oura-fetch tool to get tags data for the same period\n3. When processing duration data, always verify the units (the API provides durations in seconds) and convert appropriately to hours/minutes for discussion\n4. For sleep data, always calculate stage percentages based on total_sleep_duration, not time_in_bed\n5. Analyze the data to identify patterns and correlations\n6. Discuss how different factors (such as meals, activities, etc.) in my tags relate to my [METRIC_TYPE]",
 };
 
 const analyzeMealEffectsPrompt: OuraPrompt = {
   name: 'analyze-meal-effects',
   title: 'Analyze meal effects on health',
   description: 'Analyze how different meals affect your health metrics',
-  text: "Analyze how my meals affect my [METRIC_TYPE] for the [TIME_PERIOD]. To do this, you'll need to:\n1. Use the oura-fetch tool to get [METRIC_TYPE] data\n2. Use the oura-fetch tool to get tags data for the same period\n3. Filter the tags to focus on those containing meal descriptions (like 'Dinner', 'Breakfast', etc.)\n4. Analyze the data to identify patterns between meal types and health metrics\n5. Create a visualization showing how different meals relate to my [METRIC_TYPE]",
+  text: "Analyze how my meals affect my [METRIC_TYPE] for the [TIME_PERIOD]. To do this, you'll need to:\n1. Use the oura-fetch tool to get [METRIC_TYPE] data\n2. Use the oura-fetch tool to get tags data for the same period\n3. Filter the tags to focus on those containing meal descriptions (like 'Dinner', 'Breakfast', etc.)\n4. Analyze the data to identify patterns between meal types and health metrics\n5. Discuss how different meals relate to my [METRIC_TYPE]",
 };
 
 const verifyCalculationsPrompt: OuraPrompt = {
@@ -88,7 +88,7 @@ const dataHandlingGuidelines: OuraPrompt = {
   name: 'data-handling-guidelines',
   title: 'Data handling guidelines',
   description: 'Guidelines for handling Oura data correctly',
-  text: 'Important guidelines for analyzing Oura data:\n\n1. TIME UNITS: All duration fields in the API response are in seconds. Always convert to hours/minutes for user-friendly display.\n\n2. SLEEP PERCENTAGES: Always calculate sleep stage percentages (deep, REM, light) using total_sleep_duration as the denominator, not time_in_bed. This matches how percentages are displayed in the Oura app.\n\n3. EFFICIENCY: Sleep efficiency is total_sleep_duration divided by time_in_bed, multiplied by 100 to get a percentage.\n\n4. TAGS: Custom tags (with GUID tag_type_code) usually contain meal information in the comment field.\n\n5. CORRELATIONS: When analyzing correlations, always ensure data points are properly time-aligned and use appropriate time offsets when looking for delayed effects.\n\n6. VISUALIZATION: Always show both raw values and percentages in visualizations, and clearly label which denominator was used for percentage calculations.',
+  text: 'Important guidelines for analyzing Oura data:\n\n1. TIME UNITS: All duration fields in the API response are in seconds. Always convert to hours/minutes for user-friendly conversation.\n\n2. SLEEP PERCENTAGES: Always calculate sleep stage percentages (deep, REM, light) using total_sleep_duration as the denominator, not time_in_bed. This matches how percentages are displayed in the Oura app.\n\n3. EFFICIENCY: Sleep efficiency is total_sleep_duration divided by time_in_bed, multiplied by 100 to get a percentage.\n\n4. TAGS: Custom tags (with GUID tag_type_code) usually contain meal information in the comment field.\n\n5. CORRELATIONS: When analyzing correlations, always ensure data points are properly time-aligned and use appropriate time offsets when looking for delayed effects.\n\n6. PRESENTATION: Always provide both raw values and percentages in your analysis, and clearly explain which denominator was used for percentage calculations.',
 };
 
 // Store all prompts in an array
