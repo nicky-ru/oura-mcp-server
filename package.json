@@ -38,9 +38,10 @@
     "zod": "^4.2.1"
   },
   "bin": {
-    "oura-mcp": "./build/index.js"
+    "oura-mcp-server": "./bin/oura-mcp-server.js"
   },
   "files": [
-    "build"
+    "build",
+    "bin"
   ]
 }
