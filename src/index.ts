@@ -18,6 +18,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { prompts } from "./prompts";
 import { ouraFetchTool } from "./tools";
 import { OuraService } from "./OuraService";
+import type { EnhancedTag, TagApiResponse } from "./interfaces";
 
 
 // Create MCP Server
