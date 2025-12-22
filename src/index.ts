@@ -92,20 +92,9 @@ const ouraFetchValidationSchema = z.union([
     .strict(),
 ]);
 
-// Create MCP Server
 async function main() {
-  // Get token from environment variable
-  const ouraToken = process.env.OURA_TOKEN;
+  const ouraService = new OuraService();
 
-  if (!ouraToken) {
-    console.error('OURA_TOKEN environment variable must be set');
-    process.exit(1);
-  }
-
-  // Initialize Oura service
-  const ouraService = new OuraService(ouraToken);
-
-  // Create and configure the server
   const mcp = new McpServer(
     {
       name: 'oura-mcp-server',

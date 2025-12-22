@@ -13,10 +13,21 @@ import {
 // Oura service class
 export class OuraService {
   private token: string;
-  private baseUrl: string = 'https://api.ouraring.com/v2/usercollection';
+  private baseUrl: string;
 
-  constructor(token: string) {
-    this.token = token;
+  constructor() {
+    const ouraToken = process.env.OURA_TOKEN;
+
+    if (!ouraToken) {
+      console.error(
+        'OURA_TOKEN environment variable is not set, continuing in test mode',
+      );
+      this.token = 'test';
+      this.baseUrl = 'https://api.ouraring.com/v2/sandbox/usercollection';
+    } else {
+      this.token = ouraToken;
+      this.baseUrl = 'https://api.ouraring.com/v2/usercollection';
+    }
   }
 
   private async fetchData<T>(
