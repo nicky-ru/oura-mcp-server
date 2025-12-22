@@ -1,4 +1,10 @@
-// Helper function to check if a string is a GUID/UUID
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { z } from 'zod';
+import { prompts } from './prompts';
+import { OuraService } from './OuraService';
+import type { EnhancedTag, TagApiResponse } from './interfaces';
+
 function isGuid(str: string): boolean {
   if (!str) return false;
 
@@ -8,18 +14,83 @@ function isGuid(str: string): boolean {
   return guidPattern.test(str);
 }
 
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { prompts } from './prompts';
-import { ouraFetchTool } from './tools';
-import { OuraService } from './OuraService';
-import type { EnhancedTag, TagApiResponse } from './interfaces';
+function assertNever(value: never): never {
+  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
+}
+
+const dateRange = {
+  startDate: z.string(),
+  endDate: z.string(),
+};
+
+const dateTimeRange = {
+  startDateTime: z.string(),
+  endDateTime: z.string(),
+};
+
+const ouraFetchInputShape = {
+  endpoint: z
+    .enum([
+      'activity',
+      'readiness',
+      'sleep',
+      'stress',
+      'heartrate',
+      'sleep_sessions',
+      'tags',
+    ])
+    .describe('The Oura API endpoint to fetch data from'),
+  startDate: z.string().optional().describe('Start date in YYYY-MM-DD format'),
+  endDate: z.string().optional().describe('End date in YYYY-MM-DD format'),
+  startDateTime: z
+    .string()
+    .optional()
+    .describe('Start datetime in ISO format with timezone (for heartrate endpoint)'),
+  endDateTime: z
+    .string()
+    .optional()
+    .describe('End datetime in ISO format with timezone (for heartrate endpoint)'),
+  sleepPeriod: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether to filter heart rate data to sleep periods only (requires additional sleep data fetch)',
+    ),
+  tagName: z
+    .string()
+    .optional()
+    .describe('Optional filter for specific tag name or keyword in comment'),
+} as const;
+
+const ouraFetchValidationSchema = z.union([
+  z.object({ endpoint: z.literal('activity'), ...dateRange }).strict(),
+  z.object({ endpoint: z.literal('readiness'), ...dateRange }).strict(),
+  z.object({ endpoint: z.literal('sleep'), ...dateRange }).strict(),
+  z.object({ endpoint: z.literal('stress'), ...dateRange }).strict(),
+  z.object({ endpoint: z.literal('sleep_sessions'), ...dateRange }).strict(),
+  z
+    .object({
+      endpoint: z.literal('tags'),
+      ...dateRange,
+      tagName: z.string().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      endpoint: z.literal('heartrate'),
+      ...dateTimeRange,
+      sleepPeriod: z.literal(false).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      endpoint: z.literal('heartrate'),
+      ...dateTimeRange,
+      sleepPeriod: z.literal(true),
+      ...dateRange,
+    })
+    .strict(),
+]);
 
 // Create MCP Server
 async function main() {
@@ -35,177 +106,160 @@ async function main() {
   const ouraService = new OuraService(ouraToken);
 
   // Create and configure the server
-  const server = new Server({
-    name: 'oura-mcp-server',
-    version: '1.0.0',
-    capabilities: {
-      tools: {
-        ouraFetchTool,
-      },
+  const mcp = new McpServer(
+    {
+      name: 'oura-mcp-server',
+      version: '1.0.0',
     },
-  });
+  );
 
-  // Handle list prompts request
-  server.setRequestHandler(ListPromptsRequestSchema, async (request) => {
-    return {
-      prompts: prompts.map((prompt) => ({
-        id: prompt.id,
-        name: prompt.name,
+  for (const prompt of prompts) {
+    mcp.registerPrompt(
+      prompt.name,
+      {
+        title: prompt.title,
         description: prompt.description,
-      })),
-    };
-  });
-
-  // Handle get prompt request
-  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-    const { params } = request;
-    const { id } = params;
-
-    const prompt = prompts.find((p) => p.id === id);
-    if (!prompt) {
-      throw new Error(`Prompt not found: ${id}`);
-    }
-
-    return {
-      prompt,
-    };
-  });
-
-  // Handle list tools request
-  server.setRequestHandler(ListToolsRequestSchema, async (request) => {
-    return {
-      tools: [ouraFetchTool],
-    };
-  });
-
-  // Handle tool calls
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const { params } = request;
-    const { name, arguments: parameters = {} } = params;
-
-    try {
-      // Handle Oura fetch operations
-      if (name === 'oura-fetch') {
-        const endpoint = parameters.endpoint as string;
-        const startDate = parameters.startDate as string;
-        const endDate = parameters.endDate as string;
-        const startDateTime = parameters.startDateTime as string;
-        const endDateTime = parameters.endDateTime as string;
-        const sleepPeriod = parameters.sleepPeriod as boolean;
-        const tagName = parameters.tagName as string;
-
-        let result: any;
-        switch (endpoint) {
-          case 'activity':
-            result = await ouraService.getDailyActivity(startDate, endDate);
-            break;
-          case 'readiness':
-            result = await ouraService.getDailyReadiness(startDate, endDate);
-            break;
-          case 'sleep':
-            result = await ouraService.getDailySleep(startDate, endDate);
-            break;
-          case 'stress':
-            result = await ouraService.getDailyStress(startDate, endDate);
-            break;
-          case 'heartrate':
-            result = await ouraService.getHeartRate(startDateTime, endDateTime);
-            // If sleepPeriod is true, also fetch sleep data and include that
-            if (sleepPeriod && startDate && endDate) {
-              const sleepData = await ouraService.getSleep(startDate, endDate);
-              result = {
-                heartRate: result,
-                sleepData: sleepData,
-                note: 'Heart rate data and sleep data are both provided so you can analyze heart rate during sleep periods.',
-              };
-            }
-            break;
-          case 'sleep_sessions':
-            result = await ouraService.getSleep(startDate, endDate);
-            break;
-          case 'tags':
-            // Fetch tags
-            const tagsResult = await ouraService.getTags(startDate, endDate);
-
-            // Convert to our extended interface
-            result = {
-              ...tagsResult,
-            } as TagApiResponse;
-
-            // Filter out custom tags (GUID) with empty comments
-            if (result.data) {
-              result.data = result.data.filter((tag: EnhancedTag) => {
-                // Keep the tag if:
-                // 1. It's a standard tag (tag_type_code is not a GUID), or
-                // 2. It's a custom tag (tag_type_code is a GUID) but has a non-empty comment
-                return (
-                  !isGuid(tag.tag_type_code) ||
-                  (isGuid(tag.tag_type_code) &&
-                    tag.comment &&
-                    tag.comment.trim() !== '')
-                );
-              });
-
-              // Add metadata to help Claude understand the tag structure
-              result.tagMetadata = {
-                standardTags: result.data.filter(
-                  (tag: EnhancedTag) => !isGuid(tag.tag_type_code),
-                ).length,
-                customTags: result.data.filter((tag: EnhancedTag) =>
-                  isGuid(tag.tag_type_code),
-                ).length,
-                note: "Custom tags (with GUID tag_type_code) represent user-defined entries, often containing meal information. Standard tags have descriptive tag_type_code values like 'tag_generic_supplements'.",
-              };
-            }
-
-            // Filter by tag name if provided
-            if (tagName && result.data) {
-              result.data = result.data.filter(
-                (tag: EnhancedTag) =>
-                  tag.custom_name
-                    ?.toLowerCase()
-                    .includes(tagName.toLowerCase()) ||
-                  tag.comment?.toLowerCase().includes(tagName.toLowerCase()),
-              );
-            }
-            break;
-          default:
-            throw new Error(`Unsupported endpoint: ${endpoint}`);
-        }
-
-        // Return JSON data only
-        return {
-          content: [
-            {
+      },
+      () => ({
+        description: prompt.description,
+        messages: [
+          {
+            role: 'user',
+            content: {
               type: 'text',
-              text: JSON.stringify(result),
+              text: prompt.text,
             },
-          ],
-          isError: false,
-        };
-      }
+          },
+        ],
+      }),
+    );
+  }
 
-      throw new Error(`Unsupported tool: ${name}`);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error('Error executing tool:', errorMessage);
+  mcp.registerTool(
+    'oura-fetch',
+    {
+      title: 'Oura Fetch',
+      description: 'Fetch data from Oura Ring API endpoints',
+      inputSchema: ouraFetchInputShape,
+    },
+    async (parameters) => {
+      const validated = ouraFetchValidationSchema.parse(parameters);
+      let result: unknown;
+      switch (validated.endpoint) {
+        case 'activity':
+          result = await ouraService.getDailyActivity(
+            validated.startDate,
+            validated.endDate,
+          );
+          break;
+        case 'readiness':
+          result = await ouraService.getDailyReadiness(
+            validated.startDate,
+            validated.endDate,
+          );
+          break;
+        case 'sleep':
+          result = await ouraService.getDailySleep(
+            validated.startDate,
+            validated.endDate,
+          );
+          break;
+        case 'stress':
+          result = await ouraService.getDailyStress(
+            validated.startDate,
+            validated.endDate,
+          );
+          break;
+        case 'heartrate':
+          result = await ouraService.getHeartRate(
+            validated.startDateTime,
+            validated.endDateTime,
+          );
+          // If sleepPeriod is true, also fetch sleep data and include that
+          if (validated.sleepPeriod === true) {
+            const sleepData = await ouraService.getSleep(
+              validated.startDate,
+              validated.endDate,
+            );
+            result = {
+              heartRate: result,
+              sleepData,
+              note: 'Heart rate data and sleep data are both provided so you can analyze heart rate during sleep periods.',
+            };
+          }
+          break;
+        case 'sleep_sessions':
+          result = await ouraService.getSleep(validated.startDate, validated.endDate);
+          break;
+        case 'tags': {
+          // Fetch tags
+          const tagsResult = await ouraService.getTags(
+            validated.startDate,
+            validated.endDate,
+          );
+
+          // Convert to our extended interface
+          const tagResponse = {
+            ...tagsResult,
+          } as TagApiResponse;
+
+          // Filter out custom tags (GUID) with empty comments
+          tagResponse.data = tagResponse.data.filter((tag: EnhancedTag) => {
+            // Keep the tag if:
+            // 1. It's a standard tag (tag_type_code is not a GUID), or
+            // 2. It's a custom tag (tag_type_code is a GUID) but has a non-empty comment
+            return (
+              !isGuid(tag.tag_type_code) ||
+              (isGuid(tag.tag_type_code) && tag.comment.trim() !== '')
+            );
+          });
+
+          // Add metadata to help clients understand the tag structure
+          tagResponse.tagMetadata = {
+            standardTags: tagResponse.data.filter(
+              (tag: EnhancedTag) => !isGuid(tag.tag_type_code),
+            ).length,
+            customTags: tagResponse.data.filter((tag: EnhancedTag) =>
+              isGuid(tag.tag_type_code),
+            ).length,
+            note: "Custom tags (with GUID tag_type_code) represent user-defined entries, often containing meal information. Standard tags have descriptive tag_type_code values like 'tag_generic_supplements'.",
+          };
+
+          // Filter by tag name if provided
+          const tagName = validated.tagName;
+          if (tagName) {
+            tagResponse.data = tagResponse.data.filter(
+              (tag: EnhancedTag) =>
+                tag.custom_name
+                  .toLowerCase()
+                  .includes(tagName.toLowerCase()) ||
+                tag.comment.toLowerCase().includes(tagName.toLowerCase()),
+            );
+          }
+
+          result = tagResponse;
+          break;
+        }
+        default:
+          return assertNever(validated);
+      }
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ error: errorMessage }),
+            text: JSON.stringify(result),
           },
         ],
-        isError: true,
+        isError: false,
       };
-    }
-  });
+    },
+  );
 
   // Start the server with stdio transport
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await mcp.connect(transport);
+  console.error('Server started');
 }
 
 // Run the server
