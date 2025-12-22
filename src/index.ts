@@ -15,27 +15,7 @@ async function main() {
     version: '1.0.0',
   });
 
-  for (const prompt of prompts) {
-    mcp.registerPrompt(
-      prompt.name,
-      {
-        title: prompt.title,
-        description: prompt.description,
-      },
-      () => ({
-        description: prompt.description,
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: prompt.text,
-            },
-          },
-        ],
-      }),
-    );
-  }
+  registerPrompts(mcp);
 
   mcp.registerTool(
     'oura-fetch',
@@ -170,3 +150,27 @@ main().catch((error) => {
   console.error('Failed to start server:', error);
   process.exit(1);
 });
+
+function registerPrompts(mcp: McpServer) {
+  for (const prompt of prompts) {
+    mcp.registerPrompt(
+      prompt.name,
+      {
+        title: prompt.title,
+        description: prompt.description,
+      },
+      () => ({
+        description: prompt.description,
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: prompt.text,
+            },
+          },
+        ],
+      }),
+    );
+  }
+}
