@@ -1,10 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+import { isGuid, assertNever } from './helpers';
 import { OuraService } from './OuraService';
 import { prompts } from './prompts';
-import type { EnhancedTag, TagApiResponse } from './interfaces';
-import { isGuid, assertNever } from './helpers';
 import { ouraFetchInputShape, ouraFetchValidationSchema } from './schemas';
+
+import type { EnhancedTag, TagApiResponse } from './interfaces';
 
 export function registerTools(mcp: McpServer) {
   const ouraService = new OuraService();

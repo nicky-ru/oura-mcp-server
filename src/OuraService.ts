@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+
 import {
   OuraApiResponse,
   DailyActivity,
@@ -10,7 +11,6 @@ import {
   EnhancedTag,
 } from './interfaces';
 
-// Oura service class
 export class OuraService {
   private token: string;
   private baseUrl: string;
