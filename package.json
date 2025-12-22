@@ -11,12 +11,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.4.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@types/node": "^25.0.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   }
 }
