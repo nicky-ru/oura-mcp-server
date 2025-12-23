@@ -1,20 +1,22 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { registerTools, registerPrompts } from './registry';
+import { startHttpServer } from './http';
+import { createOuraMcpServer } from './server';
 
 async function main() {
-  const mcp = new McpServer({
-    name: 'oura-mcp-server',
-    version: '1.0.0',
-  });
+  const mcp = createOuraMcpServer();
 
-  registerPrompts(mcp);
-  registerTools(mcp);
+  const httpPort = process.env.MCP_HTTP_PORT
+    ? parseInt(process.env.MCP_HTTP_PORT, 10)
+    : 0;
 
-  const transport = new StdioServerTransport();
-  await mcp.connect(transport);
-  console.error('Server started');
+  if (httpPort > 0) {
+    startHttpServer(httpPort);
+  } else {
+    const transport = new StdioServerTransport();
+    await mcp.connect(transport);
+    console.error('Stdio server started');
+  }
 }
 
 // Run the server
