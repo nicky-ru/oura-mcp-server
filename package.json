@@ -2,21 +2,47 @@
   "name": "oura-mcp-server",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
   "type": "module",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node --esm src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "./build/index.js",
+  "engines": {
+    "node": ">=18"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.4.0",
-    "node-fetch": "^3.3.2"
+  "keywords": [
+    "mcp",
+    "oura",
+    "data",
+    "health",
+    "ring"
+  ],
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "format": "prettier -c .prettierrc --write \"**/*.{ts,js,cjs,json,md}\"",
+    "format:check": "prettier -c .prettierrc --check \"**/*.{ts,js,cjs,json,md}\"",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint .",
+    "prebuild": "rm -rf build && mkdir -p build",
+    "build": "bun build src/index.ts --target=node --outfile=build/index.js --minify",
+    "build:compile": "bun build src/index.ts --compile --minify --outfile=oura-mcp"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@eslint/js": "^9.39.2",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@types/bun": "^1.3.5",
+    "@types/node": "^25.0.3",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint": "^9.39.2",
+    "node-fetch": "^3.3.2",
+    "prettier": "^3.7.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
-  }
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.0",
+    "zod": "^4.2.1"
+  },
+  "bin": {
+    "oura-mcp-server": "./bin/oura-mcp-server.js"
+  },
+  "files": [
+    "build",
+    "bin"
+  ]
 }

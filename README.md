@@ -21,22 +21,26 @@ This server enables AI assistants to access and analyze your Oura Ring data thro
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/oura-mcp-server.git
    cd oura-mcp-server
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Create a `.env` file in the root directory with your Oura API token:
+
    ```
    OURA_TOKEN=your_personal_access_token_here
    ```
 
 4. Build the project:
+
    ```bash
    npm run build
    ```
@@ -75,12 +79,9 @@ Claude can create visual charts to help you understand your health data. Simply 
 
 ![Demo](demo.gif)
 
-
 ![Sleep Analysis](SleepAnalysis.png)
 
-
 ![Sleep Composition](SleepComp.png)
-
 
 ![HRV](HRV.png)
 
@@ -90,7 +91,7 @@ This server follows these key guidelines:
 
 - All duration fields are in seconds and converted to hours/minutes for display
 - Sleep percentages are calculated using total_sleep_duration as denominator
-- Sleep efficiency is calculated as (total_sleep_duration / time_in_bed * 100)
+- Sleep efficiency is calculated as (total_sleep_duration / time_in_bed \* 100)
 - Custom tags contain meal information in the comment field
 
 ## Contributing

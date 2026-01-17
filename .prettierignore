@@ -1,0 +1,7 @@
+node_modules
+build
+*.lock
+dist
+coverage
+.env
+.env.local
